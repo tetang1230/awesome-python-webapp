@@ -135,8 +135,10 @@ class ModelMetaclass(type):
         logging.info('Scan ORMapping %s...' % name)
         mappings = dict()
         primary_key = None
+        logging.info('attrs are : %s ' % attrs)
         for k, v in attrs.iteritems():
             if isinstance(v, Field):
+                #logging.info('name is  %s...' % name)
                 if not v.name:
                     v.name = k
                 logging.info('Found mapping: %s => %s' % (k, v))
@@ -152,11 +154,13 @@ class ModelMetaclass(type):
                         v.nullable = False
                     primary_key = v
                 mappings[k] = v
+        #logging.info('mappings are : %s ' % mappings)
         # check exist of primary key:
         if not primary_key:
             raise TypeError('Primary key not defined in class: %s' % name)
         for k in mappings.iterkeys():
             attrs.pop(k)
+        logging.info('after attrs are : %s ' % attrs)
         if not '__table__' in attrs:
             attrs['__table__'] = name.lower()
         attrs['__mappings__'] = mappings
@@ -165,6 +169,7 @@ class ModelMetaclass(type):
         for trigger in _triggers:
             if not trigger in attrs:
                 attrs[trigger] = None
+        logging.info('attrs are : %s ' % attrs)
         return type.__new__(cls, name, bases, attrs)
 
 class Model(dict):
@@ -199,9 +204,11 @@ class Model(dict):
     >>> g = User.get(10190)
     >>> g.email
     u'orm@db.org'
-    >>> r = g.delete()
-    >>> len(db.select('select * from user where id=10190'))
+    
+    r = g.delete()
+    len(db.select('select * from user where id=10190'))
     0
+    
     >>> import json
     >>> print User().__sql__()
     -- generating SQL for user:
