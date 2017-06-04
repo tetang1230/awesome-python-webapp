@@ -1362,6 +1362,7 @@ def _build_interceptor_chain(last_fn, *interceptors):
     '''
     L = list(interceptors)
     L.reverse()
+    #logging.info('拦截器是 %s' % L)
     fn = last_fn
     for f in L:
         fn = _build_interceptor_fn(f, fn)
@@ -1426,8 +1427,11 @@ class WSGIApplication(object):
     def add_module(self, mod):
         self._check_not_running()
         m = mod if type(mod)==types.ModuleType else _load_module(mod)
-        logging.info('Add module: %s' % m.__name__)
+
+        #logging.info('init dir is : %s' % dir(m))
+
         for name in dir(m):
+            #logging.info('each module name is : %s' % name)
             fn = getattr(m, name)
             if callable(fn) and hasattr(fn, '__web_route__') and hasattr(fn, '__web_method__'):
                 self.add_url(fn)
@@ -1470,16 +1474,20 @@ class WSGIApplication(object):
             request_method = ctx.request.request_method
             path_info = ctx.request.path_info
             if request_method=='GET':
+                logging.info('最后func is %s' % path_info)
                 fn = self._get_static.get(path_info, None)
                 if fn:
+                    logging.info('jichao_static get fn is %s' % fn)
                     return fn()
                 for fn in self._get_dynamic:
                     args = fn.match(path_info)
                     if args:
+                        logging.info('jichao_dynamic get fn is %s' % fn)
                         return fn(*args)
                 raise notfound()
             if request_method=='POST':
                 fn = self._post_static.get(path_info, None)
+                logging.info('post fn is %s' % fn)
                 if fn:
                     return fn()
                 for fn in self._post_dynamic:
@@ -1488,6 +1496,8 @@ class WSGIApplication(object):
                         return fn(*args)
                 raise notfound()
             raise badrequest()
+
+        logging.info('所有拦截器 %s' % self._interceptors)
 
         fn_exec = _build_interceptor_chain(fn_route, *self._interceptors)
 
@@ -1498,7 +1508,10 @@ class WSGIApplication(object):
             try:
                 r = fn_exec()
                 if isinstance(r, Template):
+                    logging.info('r.templatename is %s' % r.template_name)
+                    logging.info('r.model is %s' % r.model)
                     r = self._template_engine(r.template_name, r.model)
+
                 if isinstance(r, unicode):
                     r = r.encode('utf-8')
                 if r is None:
